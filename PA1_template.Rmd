@@ -1,25 +1,72 @@
----
-title: "Reproducible Research: Peer Assessment 1"
-output: 
-  html_document:
-    keep_md: true
----
+
+ ## Loading and preprocessing the data
+  Make sure to have the activity.csv file downloaded to your home directory.  
+
+```{r load_data, echo=TRUE}
+activity_data<-read.csv("activity.csv")
+```
+  
+ 
+ ## What is mean total number of steps taken per day?  
+
+```{r daily_sum, echo=TRUE}
+steps_by_day <- aggregate(steps ~ date, activity_data, sum)
+hist(steps_by_day$steps, main = "Total Daily Steps Distribution", col="green",xlab="Number of Steps")
+
+mean_steps<-mean(steps_by_day$steps)
+median_steps<-median(steps_by_day$steps)
+```
+
+The mean steps is `r mean_steps`.    
+The median steps is `r median_steps`  
+  
+ ## What is the average daily activity pattern?
+
+```{r daily_pattern, echo=TRUE}
+
+steps_by_interval <- aggregate(steps ~ interval, activity_data, mean)
+plot(steps_by_interval$interval,steps_by_interval$steps,xlab = "Interval",ylab = "Mean Steps",main="Mean Steps by Interval",type = 'l')
+max_interval<-steps_by_interval[steps_by_interval$steps==max(steps_by_interval$steps),]
+
+```
+The max interval is `r max_interval$interval`  
 
 
-## Loading and preprocessing the data
+  ## Imputing missing values
+```{r imputing_part1, echo=TRUE}
+  ##1
+na_records <- sum(!complete.cases(activity_data))
+```
+The number of records with missing data is `r na_records`
 
+```{r imputing_part2, echo=TRUE}
+full_data <- transform(activity_data, steps = ifelse(is.na(activity_data$steps), steps_by_interval$steps[match(activity_data$interval, steps_by_interval$interval)], activity_data$steps))
 
+```
 
-## What is mean total number of steps taken per day?
+```{r imputing_part4, echo=TRUE}
 
+steps_by_day_f <- aggregate(steps ~ date, full_data, sum)
+i_mean_steps<-mean(steps_by_day_f$steps)
+i_median_steps<-median(steps_by_day_f$steps)
+hist(steps_by_day_f$steps, main = paste("Total Steps Per Day"), col="blue", xlab="Number of Steps")
+hist(steps_by_day$steps, main = paste("Total Steps Each Day"), col="green", xlab="Number of Steps", add=T)
+legend("topright", c("Imputed", "Non-imputed"), col=c("blue", "green"), lwd=5)
 
+```
+As you can see the imputed results differ from the original data.
 
-## What is the average daily activity pattern?
+The new mean steps is `r i_mean_steps`  
+The new median steps is `r i_median_steps`
 
+  ## Are there differences in activity patterns between weekdays and weekends?
+  
+```{r weekday_compare,echo=TRUE}
+weekdays <- c("Monday", "Tuesday", "Wednesday", "Thursday", "Friday")
+full_data$day_type = as.factor(ifelse(is.element(weekdays(as.Date(full_data$date)),weekdays), "Weekday", "Weekend"))
+library(lattice)
+steps_by_interval_f <- aggregate(steps ~ interval + day_type, full_data, mean)
+xyplot(steps_by_interval_f$steps ~ steps_by_interval_f$interval|steps_by_interval_f$day_type, main="Average Steps per Day by Interval",xlab="Interval", ylab="Steps",layout=c(1,2), type="l")
 
+```
 
-## Imputing missing values
-
-
-
-## Are there differences in activity patterns between weekdays and weekends?
